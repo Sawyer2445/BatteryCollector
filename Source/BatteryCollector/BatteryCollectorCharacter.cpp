@@ -8,6 +8,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Components/SphereComponent.h"
+#include "BCPickup.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ABatteryCollectorCharacter
@@ -43,8 +45,32 @@ ABatteryCollectorCharacter::ABatteryCollectorCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	//Create CollectionSpere 
+	CollectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollectionSphere"));
+	CollectionSphere->SetupAttachment(RootComponent);
+	CollectionSphere->SetSphereRadius(200.f);
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+
+	//Set initial power 
+	InitialPower = 2000.f;
+	CurrentPower = InitialPower;
+}
+
+float ABatteryCollectorCharacter::GetCurrentPower() const
+{
+	return CurrentPower;
+}
+
+float ABatteryCollectorCharacter::GetInitialPower() const
+{
+	return InitialPower;
+}
+
+void ABatteryCollectorCharacter::UpdatePower(float PawerChange)
+{
+	CurrentPower += PawerChange;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -56,6 +82,8 @@ void ABatteryCollectorCharacter::SetupPlayerInputComponent(class UInputComponent
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Collect", IE_Pressed, this, &ABatteryCollectorCharacter::CollectPickups);
+
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ABatteryCollectorCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ABatteryCollectorCharacter::MoveRight);
@@ -74,8 +102,25 @@ void ABatteryCollectorCharacter::SetupPlayerInputComponent(class UInputComponent
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ABatteryCollectorCharacter::OnResetVR);
+	
 }
 
+
+void ABatteryCollectorCharacter::CollectPickups()
+{
+	TArray<AActor*> OverlapingActors;
+	TSubclassOf<ABCPickup> PickupClassFilter;
+	CollectionSphere->GetOverlappingActors(OverlapingActors, PickupClassFilter);
+	for (auto* Pickup : OverlapingActors)
+	{
+		ABCPickup * TestPickup = Cast<ABCPickup>(Pickup);
+		if (TestPickup && TestPickup->IsActive() && !TestPickup->IsPendingKill())
+		{
+			TestPickup->WasCollected();
+			TestPickup->SetActive(false);
+		}
+	}
+}
 
 void ABatteryCollectorCharacter::OnResetVR()
 {

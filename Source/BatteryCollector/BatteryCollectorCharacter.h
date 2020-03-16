@@ -18,6 +18,10 @@ class ABatteryCollectorCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+	
+	/** Sphere to collect pickups */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class USphereComponent* CollectionSphere;
 public:
 	ABatteryCollectorCharacter();
 
@@ -29,6 +33,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	/** Accessor for current power */
+	UFUNCTION(BlueprintPure, Category = "Power")
+	float GetCurrentPower() const;
+
+	/** Accessor for initial power */
+	UFUNCTION(BlueprintPure, Category = "Power")
+	float GetInitialPower() const;
+
+	/**
+	Function to update Current Power
+	 * @param PowerChange Amount to	CuurentPowerChange
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Power")
+	void UpdatePower(float PawerChange);
 protected:
 
 	/** Resets HMD orientation in VR. */
@@ -63,10 +81,23 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
 
+	/** Called when press a key to collect all pickups inside CollectionSphere */
+	UFUNCTION(BlueprintCallable, Category = "Pickups")
+	void CollectPickups();
+
+	/** Starting power of the character  */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Power")
+	float InitialPower;
+private:
+	/** Current power of character*/
+	UPROPERTY(VisibleAnywhere, Category = "Power")
+	float CurrentPower;
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	/** Returns CollectionSpere subobject **/
+	FORCEINLINE class USphereComponent* GetCollectionSphere() const { return CollectionSphere; }
 };
 

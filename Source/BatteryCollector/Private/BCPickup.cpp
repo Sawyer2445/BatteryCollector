@@ -42,3 +42,10 @@ void ABCPickup::SetActive(bool NewPickupState)
 	bIsActive = NewPickupState;
 }
 
+void ABCPickup::WasCollected_Implementation()
+{
+	//log collect pickup 
+	FString PickupDebugString = GetName();
+	UE_LOG(LogClass, Log, TEXT("Pickup %s was collected"), *PickupDebugString);
+}
+
