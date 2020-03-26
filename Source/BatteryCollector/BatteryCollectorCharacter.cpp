@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/SphereComponent.h"
 #include "BCPickup.h"
+#include "BCBatteryPickup.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ABatteryCollectorCharacter
@@ -56,6 +57,10 @@ ABatteryCollectorCharacter::ABatteryCollectorCharacter()
 	//Set initial power 
 	InitialPower = 2000.f;
 	CurrentPower = InitialPower;
+
+	//Set speed 
+	SpeedFactor = 0.75f;
+	BaseSpeed = 10.f;
 }
 
 float ABatteryCollectorCharacter::GetCurrentPower() const
@@ -71,6 +76,11 @@ float ABatteryCollectorCharacter::GetInitialPower() const
 void ABatteryCollectorCharacter::UpdatePower(float PawerChange)
 {
 	CurrentPower += PawerChange;
+	
+	GetCharacterMovement()->MaxWalkSpeed = BaseSpeed + SpeedFactor * CurrentPower;
+
+	//call visual effect
+	PowerChangeEffect();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -111,14 +121,26 @@ void ABatteryCollectorCharacter::CollectPickups()
 	TArray<AActor*> OverlapingActors;
 	TSubclassOf<ABCPickup> PickupClassFilter;
 	CollectionSphere->GetOverlappingActors(OverlapingActors, PickupClassFilter);
+	float CollectedPower = 0;
+
 	for (auto* Pickup : OverlapingActors)
 	{
 		ABCPickup * TestPickup = Cast<ABCPickup>(Pickup);
 		if (TestPickup && TestPickup->IsActive() && !TestPickup->IsPendingKill())
 		{
 			TestPickup->WasCollected();
+			ABCBatteryPickup* const TestPickupBattery = Cast<ABCBatteryPickup>(TestPickup);
+			if (TestPickupBattery)
+			{
+				//Increase collected power 
+				CollectedPower += TestPickupBattery->GetBatteryPower();
+			}
 			TestPickup->SetActive(false);
 		}
+	}
+	if (CollectedPower > 0)
+	{
+		UpdatePower(CollectedPower);	
 	}
 }
 
